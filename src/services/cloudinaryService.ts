@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { cloudinary, isCloudinaryConfigured } from '../config/cloudinary';
+import { uploadToCloudinary } from '../utils/cloudinary';
 
 export interface UploadResult {
   url: string;
@@ -13,52 +14,60 @@ export const uploadFile = async (
 ): Promise<UploadResult> => {
   if (isCloudinaryConfigured) {
     try {
-      // Use temp file path created by multer to upload to Cloudinary
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: folder,
-        resource_type: 'auto',
-      });
-      // Delete temp file after upload
-      if (fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
+      if (file.buffer) {
+        // Stream directly from memory buffer (production & serverless native)
+        const res = await uploadToCloudinary(file.buffer, folder);
+        return {
+          url: res.url,
+          publicId: res.publicId,
+        };
+      } else if (file.path && fs.existsSync(file.path)) {
+        // Disk storage fallback if file.path is present
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: folder,
+          resource_type: 'auto',
+        });
+        try {
+          fs.unlinkSync(file.path);
+        } catch {}
+        return {
+          url: result.secure_url,
+          publicId: result.public_id,
+        };
       }
-      return {
-        url: result.secure_url,
-        publicId: result.public_id,
-      };
     } catch (error: any) {
-      console.error('Cloudinary upload error, falling back to local storage:', error.message);
-      // Fallback to local storage if Cloudinary fails
+      console.error('Cloudinary upload error:', error.message);
+      if (process.env.VERCEL) {
+        throw new Error(`Media upload failed: ${error.message}`);
+      }
     }
   }
 
-  // Local static storage fallback
+  if (process.env.VERCEL) {
+    throw new Error('Cloudinary environment variables must be configured on Vercel for media uploads.');
+  }
+
+  // Local static storage fallback (development mode only)
   const uploadDir = path.join(process.cwd(), 'public', 'uploads');
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 
-  // Create a unique filename
   const extension = path.extname(file.originalname);
   const baseName = path.basename(file.originalname, extension).replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `${baseName}_${Date.now()}${extension}`;
   const targetPath = path.join(uploadDir, fileName);
 
-  // If multer configured diskStorage, copy or rename from temp file path
-  if (fs.existsSync(file.path)) {
-    fs.renameSync(file.path, targetPath);
-  } else if (file.buffer) {
+  if (file.buffer) {
     fs.writeFileSync(targetPath, file.buffer);
+  } else if (file.path && fs.existsSync(file.path)) {
+    fs.renameSync(file.path, targetPath);
   } else {
-    throw new Error('No file contents found to write to local storage');
+    throw new Error('No file contents found for storage');
   }
 
-  // Return local static path. We will serve /uploads/ path in App
-  const host = process.env.CLIENT_URL || 'http://localhost:5000';
-  const url = `/uploads/${fileName}`; // serve relative, frontend can append host or let proxy handle it
-  
   return {
-    url,
+    url: `/uploads/${fileName}`,
     publicId: fileName,
   };
 };
@@ -76,15 +85,16 @@ export const deleteFile = async (publicId: string): Promise<boolean> => {
     }
   }
 
-  // Local delete fallback
-  try {
-    const filePath = path.join(process.cwd(), 'public', 'uploads', publicId);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      return true;
+  if (!process.env.VERCEL) {
+    try {
+      const filePath = path.join(process.cwd(), 'public', 'uploads', publicId);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        return true;
+      }
+    } catch (error: any) {
+      console.error('Local file delete error:', error.message);
     }
-  } catch (error: any) {
-    console.error('Local file delete error:', error.message);
   }
   return false;
 };
