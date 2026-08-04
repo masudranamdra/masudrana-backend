@@ -33,23 +33,28 @@ app.use(
 );
 
 // Enable CORS
+const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+const cleanClientUrl = rawClientUrl.replace(/\/+$/, '');
+
 const whitelist = [
-  process.env.CLIENT_URL || 'http://localhost:3000',
+  cleanClientUrl,
   'http://localhost:3000',
+  'http://127.0.0.1:3000',
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
+      const cleanOrigin = origin ? origin.replace(/\/+$/, '') : '';
       if (
         !origin || 
-        whitelist.indexOf(origin) !== -1 || 
+        whitelist.indexOf(cleanOrigin) !== -1 || 
         process.env.NODE_ENV === 'development' ||
-        origin.endsWith('.vercel.app') // Support any Vercel deployment subdomains
+        cleanOrigin.endsWith('.vercel.app') // Support Vercel deployment subdomains
       ) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error(`Not allowed by CORS: ${origin}`));
       }
     },
     credentials: true,

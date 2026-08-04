@@ -15,7 +15,7 @@ export const protect = async (
   let token: string | undefined;
 
   // Read cookie
-  if (req.cookies && req.cookies.token) {
+  if (req.cookies && req.cookies.token && req.cookies.token !== 'none') {
     token = req.cookies.token;
   } 
   // Fallback: Read Authorization Header

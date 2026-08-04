@@ -10,20 +10,26 @@ export const register = async (req: Request, res: Response, next: NextFunction):
   try {
     const { username, email, password } = req.body;
 
+    if (!username || !email || !password) {
+      res.status(400).json({ success: false, message: 'Please provide a username, email address, and password' });
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
     const allowedAdmins = ['masud.dev01@gmail.com', 'mr3377006@gmail.com'];
-    const isAdmin = allowedAdmins.includes(email.trim().toLowerCase());
+    const isAdmin = allowedAdmins.includes(normalizedEmail);
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: normalizedEmail });
     if (userExists) {
-      res.status(400).json({ success: false, message: 'User already exists' });
+      res.status(400).json({ success: false, message: 'User with this email already exists' });
       return;
     }
 
     // Create user with appropriate role
     const user = await User.create({
-      username,
-      email,
+      username: username.trim(),
+      email: normalizedEmail,
       password,
       role: isAdmin ? 'admin' : 'user',
     });
@@ -44,17 +50,19 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
-      res.status(401).json({ success: false, message: 'Invalid credentials' });
+      res.status(401).json({ success: false, message: 'Invalid email or password' });
       return;
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      res.status(401).json({ success: false, message: 'Invalid credentials' });
+      res.status(401).json({ success: false, message: 'Invalid email or password' });
       return;
     }
 
@@ -116,17 +124,20 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const allowedAdmins = ['masud.dev01@gmail.com', 'mr3377006@gmail.com'];
-    const isAdmin = allowedAdmins.includes(email.trim().toLowerCase());
+    const isAdmin = allowedAdmins.includes(normalizedEmail);
 
     // Check if user exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: normalizedEmail });
 
     if (user) {
       // If user exists but no googleId, associate it
-      if (!user.googleId) {
+      if (!user.googleId && googleId) {
         user.googleId = googleId;
-        if (avatar && !user.avatar) user.avatar = avatar;
+      }
+      if (avatar && !user.avatar) {
+        user.avatar = avatar;
       }
       // Ensure role is correctly assigned if it was mismatched
       if (isAdmin && user.role !== 'admin') {
@@ -136,9 +147,9 @@ export const googleLogin = async (req: Request, res: Response, next: NextFunctio
     } else {
       // Create new user with appropriate role
       user = await User.create({
-        username: username || email.split('@')[0],
-        email: email,
-        googleId: googleId,
+        username: username || normalizedEmail.split('@')[0],
+        email: normalizedEmail,
+        googleId: googleId || '',
         avatar: avatar || '',
         role: isAdmin ? 'admin' : 'user',
       });
