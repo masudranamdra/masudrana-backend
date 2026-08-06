@@ -10,6 +10,7 @@ export interface IAboutGallery extends Document {
   order: number;
   visible: boolean;
   featured: boolean;
+  isProtected: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,7 +29,8 @@ const AboutGallerySchema = new Schema<IAboutGallery>(
     title: { type: String, default: '' },
     order: { type: Number, default: 0 },
     visible: { type: Boolean, default: true },
-    featured: { type: Boolean, default: false }
+    featured: { type: Boolean, default: false },
+    isProtected: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
