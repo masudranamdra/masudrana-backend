@@ -7,7 +7,7 @@ import {
   getLifestyle, updateLifestyle,
   getTimelines, createTimeline, updateTimeline, deleteTimeline,
   getFAQs, createFAQ, updateFAQ, deleteFAQ,
-  getGallery, createGallery, updateGallery, deleteGallery,
+  getGallery, updateBulkGallery, createGallery, updateGallery, deleteGallery,
   uploadImage, deleteImage
 } from '../controllers/aboutController';
 import { protect, restrictTo } from '../middleware/authMiddleware';
@@ -47,6 +47,7 @@ router.delete('/faq/:id', protect, restrictTo('admin'), deleteFAQ);
 
 // Gallery
 router.get('/gallery', getGallery);
+router.put('/gallery', protect, restrictTo('admin'), updateBulkGallery);
 router.post('/gallery', protect, restrictTo('admin'), createGallery);
 router.put('/gallery/:id', protect, restrictTo('admin'), updateGallery);
 router.delete('/gallery/:id', protect, restrictTo('admin'), deleteGallery);

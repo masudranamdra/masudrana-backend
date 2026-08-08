@@ -195,9 +195,36 @@ export const deleteFAQ = async (req: Request, res: Response) => {
 export const getGallery = async (req: Request, res: Response) => {
   try {
     const gallery = await AboutGallery.find().sort({ order: 1 });
-    res.status(200).json({ success: true, data: gallery });
+    res.status(200).json({ success: true, data: { gallery } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+export const updateBulkGallery = async (req: Request, res: Response) => {
+  try {
+    const { gallery } = req.body;
+    if (!Array.isArray(gallery)) {
+      return res.status(400).json({ success: false, message: 'gallery array required' });
+    }
+
+    // Replace gallery items
+    await AboutGallery.deleteMany({});
+
+    const formattedItems = gallery.map((item: any, index: number) => ({
+      url: item.url || '',
+      publicId: item.publicId || '',
+      caption: item.caption || '',
+      type: item.type || 'image',
+      isFeatured: item.isFeatured || false,
+      isProtected: item.isProtected || false,
+      order: index,
+    }));
+
+    const savedGallery = await AboutGallery.insertMany(formattedItems);
+    res.status(200).json({ success: true, data: { gallery: savedGallery } });
+  } catch (error: any) {
+    console.error('updateBulkGallery error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to save gallery' });
   }
 };
 export const createGallery = async (req: Request, res: Response) => {
