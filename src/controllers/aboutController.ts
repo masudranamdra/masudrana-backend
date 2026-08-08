@@ -225,13 +225,15 @@ export const deleteGallery = async (req: Request, res: Response) => {
   }
 };
 
-// --- CLOUDINARY UPLOAD HANDLER ---
+import { uploadFile, deleteFile as deleteFileService } from '../services/cloudinaryService';
+
+// --- UPLOAD HANDLER ---
 export const uploadImage = async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file provided' });
     }
-    const result = await uploadToCloudinary(req.file.buffer, 'portfolio_about');
+    const result = await uploadFile(req.file, 'portfolio_about');
     res.status(200).json({ success: true, data: result });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Upload failed', error: error.message });
@@ -242,7 +244,7 @@ export const deleteImage = async (req: Request, res: Response) => {
   try {
     const { publicId } = req.body;
     if (!publicId) return res.status(400).json({ success: false, message: 'publicId required' });
-    await deleteFromCloudinary(publicId);
+    await deleteFileService(publicId);
     res.status(200).json({ success: true, message: 'Image deleted' });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Delete failed', error: error.message });

@@ -22,6 +22,7 @@ import documentRoutes from './routes/documentRoutes';
 import messageRoutes from './routes/messageRoutes';
 import configRoutes from './routes/configRoutes';
 import aboutRoutes from './routes/aboutRoutes';
+import uploadRoutes from './routes/uploadRoutes';
 
 const app = express();
 
@@ -109,6 +110,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/about', aboutRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
