@@ -54,7 +54,7 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
       return;
     }
 
-    // Parse tags if sent as string (e.g. from FormData)
+    // Parse tags, gallery, documentDetails if sent as string
     let tags = req.body.tags;
     if (typeof tags === 'string') {
       try {
@@ -64,10 +64,30 @@ export const createProject = async (req: Request, res: Response, next: NextFunct
       }
     }
 
+    let gallery = req.body.gallery;
+    if (typeof gallery === 'string') {
+      try {
+        gallery = JSON.parse(gallery);
+      } catch {
+        gallery = [];
+      }
+    }
+
+    let documentDetails = req.body.documentDetails;
+    if (typeof documentDetails === 'string') {
+      try {
+        documentDetails = JSON.parse(documentDetails);
+      } catch {
+        documentDetails = {};
+      }
+    }
+
     const projectData = {
       ...req.body,
       image: imageInfo,
       tags: tags || [],
+      gallery: gallery || [],
+      documentDetails: documentDetails || {},
       isFeatured: req.body.isFeatured === 'true' || req.body.isFeatured === true,
       featuredInAbout: req.body.featuredInAbout === 'true' || req.body.featuredInAbout === true,
       order: req.body.order ? parseInt(req.body.order, 10) : 0,
@@ -92,18 +112,15 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
     let imageInfo = project.image;
 
     if (req.file) {
-      // Delete old file
       if (project.image && project.image.publicId) {
         await deleteFile(project.image.publicId);
       }
-      // Upload new file
       const result = await uploadFile(req.file, 'projects');
       imageInfo = { url: result.url, publicId: result.publicId || '' };
     } else if (req.body.imageUrl) {
       imageInfo = { url: req.body.imageUrl, publicId: '' };
     }
 
-    // Parse tags if sent as string
     let tags = req.body.tags;
     if (tags && typeof tags === 'string') {
       try {
@@ -113,14 +130,33 @@ export const updateProject = async (req: Request, res: Response, next: NextFunct
       }
     }
 
+    let gallery = req.body.gallery;
+    if (gallery && typeof gallery === 'string') {
+      try {
+        gallery = JSON.parse(gallery);
+      } catch {
+        gallery = [];
+      }
+    }
+
+    let documentDetails = req.body.documentDetails;
+    if (documentDetails && typeof documentDetails === 'string') {
+      try {
+        documentDetails = JSON.parse(documentDetails);
+      } catch {
+        documentDetails = {};
+      }
+    }
+
     const updateData = {
       ...req.body,
       image: imageInfo,
     };
 
-    if (tags) {
-      updateData.tags = tags;
-    }
+    if (tags !== undefined) updateData.tags = tags;
+    if (gallery !== undefined) updateData.gallery = gallery;
+    if (documentDetails !== undefined) updateData.documentDetails = documentDetails;
+
     if (req.body.isFeatured !== undefined) {
       updateData.isFeatured = req.body.isFeatured === 'true' || req.body.isFeatured === true;
     }

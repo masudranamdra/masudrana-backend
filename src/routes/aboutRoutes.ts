@@ -5,7 +5,8 @@ import {
   getBasic, updateBasic,
   getSettings, updateSettings,
   getLifestyle, updateLifestyle,
-  getTimelines, createTimeline, updateTimeline, deleteTimeline,
+  getProfessional, updateProfessional,
+  getTimelines, updateBulkTimeline, createTimeline, updateTimeline, deleteTimeline,
   getFAQs, createFAQ, updateFAQ, deleteFAQ,
   getGallery, updateBulkGallery, createGallery, updateGallery, deleteGallery,
   uploadImage, deleteImage
@@ -33,8 +34,13 @@ router.put('/settings', protect, restrictTo('admin'), updateSettings);
 router.get('/lifestyle', getLifestyle);
 router.put('/lifestyle', protect, restrictTo('admin'), updateLifestyle);
 
+// Admin Professional Info
+router.get('/professional', getProfessional);
+router.put('/professional', protect, restrictTo('admin'), updateProfessional);
+
 // Timelines
 router.get('/timeline', getTimelines);
+router.put('/timeline', protect, restrictTo('admin'), updateBulkTimeline);
 router.post('/timeline', protect, restrictTo('admin'), createTimeline);
 router.put('/timeline/:id', protect, restrictTo('admin'), updateTimeline);
 router.delete('/timeline/:id', protect, restrictTo('admin'), deleteTimeline);
