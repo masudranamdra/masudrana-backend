@@ -31,10 +31,18 @@ export const createActivity = async (req: Request, res: Response, next: NextFunc
       imageInfo = { url: req.body.imageUrl, publicId: '' };
     }
 
+    if (req.body.semesters && typeof req.body.semesters === 'string') {
+      try {
+        req.body.semesters = JSON.parse(req.body.semesters);
+      } catch (e) {
+        console.error('Failed to parse semesters JSON:', e);
+      }
+    }
+
     const activityData = {
       ...req.body,
       image: imageInfo,
-      order: req.body.order ? parseInt(req.body.order, 10) : 0,
+      order: req.body.order !== undefined ? parseInt(req.body.order, 10) : 0,
     };
 
     const activity = await Activity.create(activityData);
@@ -63,6 +71,14 @@ export const updateActivity = async (req: Request, res: Response, next: NextFunc
       imageInfo = { url: result.url, publicId: result.publicId || '' };
     } else if (req.body.imageUrl) {
       imageInfo = { url: req.body.imageUrl, publicId: '' };
+    }
+
+    if (req.body.semesters && typeof req.body.semesters === 'string') {
+      try {
+        req.body.semesters = JSON.parse(req.body.semesters);
+      } catch (e) {
+        console.error('Failed to parse semesters JSON:', e);
+      }
     }
 
     const updateData = {
